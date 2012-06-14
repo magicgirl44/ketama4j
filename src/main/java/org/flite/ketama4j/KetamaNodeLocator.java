@@ -33,15 +33,16 @@ import java.util.*;
 public class KetamaNodeLocator {
 
     private static final int DEFAULT_REPETITIONS = 100;
-    private static MessageDigest md5Digest = null;
+    private static MessageDigest MD5_DIGEST = null;
     static {
         try {
-            md5Digest = MessageDigest.getInstance("MD5");
+            MD5_DIGEST = MessageDigest.getInstance("MD5");
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException("MD5 not supported", e);
         }
     }
 
+    // TODO: Put these into a single complex object so there are no synchronization issues.
     private TreeMap<Long, String> ketamaNodes;
     private Set<String> allNodes;
 
@@ -128,7 +129,9 @@ public class KetamaNodeLocator {
                 }
             }
         }
-        assert newNodeMap.size() == numReps * nodes.size();
+
+        // This is really only true at small sizes. With many nodes, there is a possibility of collision.
+        assert newNodeSet.size() < 1000 ? newNodeMap.size() == numReps * nodes.size() : true : "Size: " + newNodeMap.size() + ", expected: " + (numReps * nodes.size());
         ketamaNodes = newNodeMap;
         allNodes = newNodeSet;
     }
@@ -140,7 +143,7 @@ public class KetamaNodeLocator {
         MessageDigest md5;
         try {
             // I believe this is done to prevent multi-threading/synchronization problems
-            md5 = (MessageDigest) md5Digest.clone();
+            md5 = (MessageDigest) MD5_DIGEST.clone();
         } catch (CloneNotSupportedException e) {
             throw new RuntimeException("clone of MD5 not supported", e);
         }
