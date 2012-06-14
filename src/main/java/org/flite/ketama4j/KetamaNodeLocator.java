@@ -42,9 +42,7 @@ public class KetamaNodeLocator {
         }
     }
 
-    // TODO: Put these into a single complex object so there are no synchronization issues.
-    private TreeMap<Long, String> ketamaNodes;
-    private Set<String> allNodes;
+    private KetamaData data;
 
     public KetamaNodeLocator(final List<String> nodes) {
         setKetamaNodes(nodes);
@@ -55,55 +53,55 @@ public class KetamaNodeLocator {
     }
 
     public String getPrimary(final String key) {
-        final List<String> rv = getNodeForKey(hash(key), 1);
+        final List<String> rv = getNodesForKey(hash(key), 1);
         assert rv != null && rv.get(0) != null: "Found no node for key " + key;
         return rv.get(0);
     }
 
     public List<String> getPriorityList(final String key, final int listSize) {
-        final List<String> rv = getNodeForKey(hash(key), listSize);
+        final List<String> rv = getNodesForKey(hash(key), listSize);
         assert rv != null : "Found no node for key " + key;
         return rv;
     }
 
-    protected List<String> getNodeForKey(final long hash, final int listSize) {
+    protected List<String> getNodesForKey(final long hash, final int listSize) {
         long target = hash;
-        // Local cache so the nodes aren't changed in the middle of calculation.
-        final TreeMap<Long, String> localMap = ketamaNodes;
-        final Set<String> localSet = allNodes;
-        if (!localMap.containsKey(target)) {
+        // Local reference so the nodes aren't changed in the middle of calculation.
+        final KetamaData localData = data;
+        if (!data.getNodeMap().containsKey(target)) {
             // Java 1.6 adds a ceilingKey method, but I'm still stuck in 1.5
             // in a lot of places, so I'm doing this myself.
-            final SortedMap<Long, String> tailMap = localMap.tailMap(target);
-            target = tailMap.isEmpty() ? localMap.firstKey() : tailMap.firstKey();
+            final SortedMap<Long, String> tailMap = data.getNodeMap().tailMap(target);
+            target = tailMap.isEmpty() ? data.getNodeMap().firstKey() : tailMap.firstKey();
         }
-        final int maxSize = localSet.size() > listSize ? listSize : localSet.size();
+        final int maxSize = data.getNodeSet().size() > listSize ? listSize : data.getNodeSet().size();
         final List<String> results = new ArrayList<String>(maxSize);
-        results.add(localMap.get(target));
+        results.add(data.getNodeMap().get(target));
 
         // We're done if we're only looking for the first one.
         if (listSize == 1) { return results; }
 
         // Find the rest of the list (uniquely) in order.
         final Set<String> accounted = new TreeSet<String>();
-        accounted.add(localMap.get(target));
+        accounted.add(data.getNodeMap().get(target));
 
-        Long pointerKey = localMap.higherKey(target);
+        Long pointerKey = data.getNodeMap().higherKey(target);
         while ((pointerKey == null || pointerKey.longValue() != target) && accounted.size() < maxSize) {
-            if (pointerKey == null) { pointerKey = localMap.firstKey(); }
-            final String node = localMap.get(pointerKey);
+            if (pointerKey == null) { pointerKey = data.getNodeMap().firstKey(); }
+            final String node = data.getNodeMap().get(pointerKey);
             // Only add nodes that haven't already been accounted for.
             if (node != null && !accounted.contains(node)) {
                 results.add(node);
                 accounted.add(node);
             }
-            pointerKey = localMap.higherKey(pointerKey);
+            pointerKey = data.getNodeMap().higherKey(pointerKey);
         }
 
         return results;
     }
 
     protected void setKetamaNodes(List<String> nodes) {
+        // TODO: Error checking for null/blank nodes.
         // TODO: Do a shortcut for only one node?
         final TreeMap<Long, String> newNodeMap = new TreeMap<Long, String>();
         final Set<String> newNodeSet = new HashSet<String>();
@@ -132,8 +130,7 @@ public class KetamaNodeLocator {
 
         // This is really only true at small sizes. With many nodes, there is a possibility of collision.
         assert newNodeSet.size() < 1000 ? newNodeMap.size() == numReps * nodes.size() : true : "Size: " + newNodeMap.size() + ", expected: " + (numReps * nodes.size());
-        ketamaNodes = newNodeMap;
-        allNodes = newNodeSet;
+        data = new KetamaData(newNodeMap, newNodeSet);
     }
 
     /**
@@ -176,5 +173,27 @@ public class KetamaNodeLocator {
 
     protected static String decorateWithCounter(final String input, final int counter) {
         return new StringBuilder(input).append('%').append(counter).append('%').toString();
+    }
+
+    /**
+     * Creating a complex object to hold the data references so they won't be un-syncronized.
+     */
+    private static final class KetamaData {
+        private TreeMap<Long, String> nodeMap;
+        private Set<String> nodeSet;
+
+        private KetamaData(final TreeMap<Long, String> nodeMap, final Set<String> nodeSet) {
+            // Ideally we'd convert these to unmodifiable versions, but no such thing exists for TreeMap.
+            this.nodeMap = nodeMap;
+            this.nodeSet = nodeSet;
+        }
+
+        public TreeMap<Long, String> getNodeMap() {
+            return nodeMap;
+        }
+
+        public Set<String> getNodeSet() {
+            return nodeSet;
+        }
     }
 }

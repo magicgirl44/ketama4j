@@ -208,7 +208,7 @@ public class KetamaNodeLocatorTest {
         newNodes.add(oldNodes.get(2) + "-modified-");
         newNodes.add(oldNodes.get(6) + "-modified-");
         newNodes.add(oldNodes.get(9) + "-modified-");
-        locator.setKetamaNodes(newNodes);
+        locator.updateLocator(newNodes);
 
         for (final String key : keys) {
             final List<String> superlist = locator.getPriorityList(key, oldSize);
