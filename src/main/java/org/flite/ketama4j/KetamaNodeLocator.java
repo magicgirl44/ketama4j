@@ -101,13 +101,12 @@ public class KetamaNodeLocator {
     }
 
     protected void setKetamaNodes(List<String> nodes) {
-        // TODO: Error checking for null/blank nodes.
-        // TODO: Do a shortcut for only one node?
         final TreeMap<Long, String> newNodeMap = new TreeMap<Long, String>();
         final Set<String> newNodeSet = new HashSet<String>();
         final Map<String, Integer> nodeCounts = new TreeMap<String, Integer>();
         final int numReps = DEFAULT_REPETITIONS;
         for (final String node : nodes) {
+            if (node == null) { throw new InvalidParameterException("Nodes may not be NULL."); }
             // This is the magic that will allow us to do weighted nodes.
             final int nodeCount = nodeCounts.containsKey(node) ? nodeCounts.get(node).intValue() + 1 : 1;
             final String nodePlusCount = decorateWithCounter(node, nodeCount);

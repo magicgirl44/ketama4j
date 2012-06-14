@@ -4,6 +4,7 @@ import org.apache.commons.lang.*;
 import org.apache.commons.lang.math.*;
 import org.testng.annotations.*;
 
+import java.security.*;
 import java.util.*;
 
 import static org.testng.AssertJUnit.*;
@@ -237,7 +238,43 @@ public class KetamaNodeLocatorTest {
             assertTrue((System.currentTimeMillis() - start2) < 200);
             assertEquals(nodeSize, superlist.size());
         }
+    }
 
+    @Test
+    public void testNullNodes() {
+        final List<String> nodesNull = generateRandomStrings(5);
+        nodesNull.add(null);
+        nodesNull.addAll(generateRandomStrings(5));
+
+        final List<String> nodesComplete = generateRandomStrings(9);
+
+        // Make sure just creating the locator will error out.
+        try {
+            new KetamaNodeLocator(nodesNull);
+            fail("Expected Exception");
+        } catch (InvalidParameterException ex) { }
+
+        final KetamaNodeLocator locator = new KetamaNodeLocator(nodesComplete);
+
+        final List<String> keys = generateRandomStrings(3);
+
+        for (final String key : keys) {
+            final List<String> superlist = locator.getPriorityList(key, nodesComplete.size());
+            assertEquals(nodesComplete.size(), superlist.size());
+        }
+
+        // Now try to update the locator with bad data.
+        try {
+            locator.updateLocator(nodesNull);
+            fail("Expected Exception");
+        } catch (InvalidParameterException ex) { }
+
+        // Now we ensure the locator continues to work with the
+        // previous data from before we tried to set bad data.
+        for (final String key : keys) {
+            final List<String> superlist = locator.getPriorityList(key, nodesComplete.size());
+            assertEquals(nodesComplete.size(), superlist.size());
+        }
     }
 
 }
