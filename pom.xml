@@ -11,7 +11,7 @@
 
   <scm>
     <connection>scm:git:http://github.com/flite/ketama4j</connection>
-    <developerConnection>scm:git:git://git@github.com:flite/ketama4j.git</developerConnection>
+    <developerConnection>scm:git:git://github.com/flite/ketama4j</developerConnection>
     <url>http://github.com/flite/ketama4j</url>
   </scm>
 
